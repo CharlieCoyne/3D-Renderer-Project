@@ -8,7 +8,7 @@ pygame.init()
 # Pygame Settings
 WIDTH, HEIGHT = 1920, 1080
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("3D Renderer")
+pygame.display.set_caption("3d Renderer")
 start_time = pygame.time.get_ticks()
 
 # Temporary Cube
@@ -73,14 +73,25 @@ def draw_triangle(x1,y1,x2,y2,x3,y3, colour = (255,255,255)):
     pygame.draw.line(screen, colour, (x2,y2),(x3,y3))
     pygame.draw.line(screen, colour, (x3,y3),(x1,y1))
 
+cameraX, cameraZ = 0, 0
+speed = 0.01
+
 running = True
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
 
-    screen.fill((0, 0, 0))  # fill screen with black
-    
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_w]:
+        cameraZ += speed
+    if keys[pygame.K_s]:
+        cameraZ -= speed
+    if keys[pygame.K_a]:
+        cameraX -= speed
+    if keys[pygame.K_d]:
+        cameraX += speed
+
     fElapsedTime = (pygame.time.get_ticks() - start_time) / 1000
     fTheta = fElapsedTime
 
@@ -104,6 +115,8 @@ while running:
     xRotationMatrix[2][2] = math.cos(fTheta * 0.5)
     xRotationMatrix[3][3] = 1
 
+    screen.fill((0, 0, 0))  # fill screen with black
+
     # Start of drawing stuff
 
     # Drawing Triangles
@@ -125,9 +138,13 @@ while running:
         p3 = vector_matrix_multiplication(p3, xRotationMatrix)
         
         # Applying offset and projecting to screen
-        p1[2] += offset
-        p2[2] += offset
-        p3[2] += offset
+        p1[0] += -cameraX
+        p2[0] += -cameraX
+        p3[0] += -cameraX
+
+        p1[2] += offset - cameraZ
+        p2[2] += offset - cameraZ
+        p3[2] += offset - cameraZ
         
         projectedTriangle = [vector_matrix_multiplication(p1, projectionMatrix),
                      vector_matrix_multiplication(p2, projectionMatrix),
