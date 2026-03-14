@@ -2,6 +2,7 @@
 import pygame
 import sys
 import math
+from Vector3 import *
 
 pygame.init()
 
@@ -13,29 +14,30 @@ start_time = pygame.time.get_ticks()
 
 # Temporary Cube
 cubeTriangles = [
-                # South Triangles
-                [0,0,0,    0,1,0,   1,1,0],
-                [0,0,0,    1,1,0,   1,0,0],
-                
-                # East Triangles
-                [1,0,0,    1,1,0,    1,1,1],
-                [1,0,0,    1,1,1,    1,0,0],
-                
-                # North Triangles
-                [1,0,1,    1,1,1,    0,1,1],
-                [1,0,1,    0,1,1,    0,0,1],
-                
-                # West Triangles
-                [0,0,1,    0,1,1,    0,1,0],
-                [0,0,1,    0,1,0,    0,0,0],
-                
-                # Top Triangles
-                [0,1,0,    0,1,1,    1,1,1],
-                [0,1,0,    1,1,1,    1,1,0],
+    # South Triangles
+    [Vector3(0,0,0), Vector3(0,1,0), Vector3(1,1,0)],
+    [Vector3(0,0,0), Vector3(1,1,0), Vector3(1,0,0)],
 
-                # Bottom Triangles
-                [1,0,1,    0,0,1,    0,0,0],
-                [1,0,1,    0,0,0,    1,0,0],]
+    # East Triangles
+    [Vector3(1,0,0), Vector3(1,1,0), Vector3(1,1,1)],
+    [Vector3(1,0,0), Vector3(1,1,1), Vector3(1,0,0)],
+
+    # North Triangles
+    [Vector3(1,0,1), Vector3(1,1,1), Vector3(0,1,1)],
+    [Vector3(1,0,1), Vector3(0,1,1), Vector3(0,0,1)],
+
+    # West Triangles
+    [Vector3(0,0,1), Vector3(0,1,1), Vector3(0,1,0)],
+    [Vector3(0,0,1), Vector3(0,1,0), Vector3(0,0,0)],
+
+    # Top Triangles
+    [Vector3(0,1,0), Vector3(0,1,1), Vector3(1,1,1)],
+    [Vector3(0,1,0), Vector3(1,1,1), Vector3(1,1,0)],
+
+    # Bottom Triangles
+    [Vector3(1,0,1), Vector3(0,0,1), Vector3(0,0,0)],
+    [Vector3(1,0,1), Vector3(0,0,0), Vector3(1,0,0)],
+]
 
 # Projection Matrix
 fNear = 0.1
@@ -51,21 +53,6 @@ projectionMatrix[1][1] = fFOVRad
 projectionMatrix[2][2] = fFar / (fFar - fNear)
 projectionMatrix[3][2] = (-fFar * fNear) / (fFar - fNear)
 projectionMatrix[2][3] = 1 # used to get z back out during matrix multiplication
-
-
-def vector_matrix_multiplication(vector, m):
-    outputVector = [0,0,0]
-    outputVector[0] = vector[0] * m[0][0] + vector[1] * m[1][0] + vector[2] * m[2][0] + m[3][0]
-    outputVector[1] = vector[0] * m[0][1] + vector[1] * m[1][1] + vector[2] * m[2][1] + m[3][1]
-    outputVector[2] = vector[0] * m[0][2] + vector[1] * m[1][2] + vector[2] * m[2][2] + m[3][2]
-    w               = vector[0] * m[0][3] + vector[1] * m[1][3] + vector[2] * m[2][3] + m[3][3]
-
-    if w != 0:
-        outputVector[0] = outputVector[0] / w
-        outputVector[1] = outputVector[1] / w
-        outputVector[2] = outputVector[2] / w 
-
-    return outputVector
 
 
 def draw_triangle(x1,y1,x2,y2,x3,y3, colour = (255,255,255)):
@@ -123,41 +110,56 @@ while running:
     for triangle in cubeTriangles:
         offset = 3 #Temporary offset so that cube isn't rendered inside of the "camera"
 
-        p1 = [coord for coord in triangle[0:3]]
-        p2 = [coord for coord in triangle[3:6]]
-        p3 = [coord for coord in triangle[6:9]]
+        p0 = triangle[0]
+        p1 = triangle[1]
+        p2 = triangle[2]
 
         # Applying Z Rotation
-        p1 = vector_matrix_multiplication(p1, zRotationMatrix)
-        p2 = vector_matrix_multiplication(p2, zRotationMatrix)
-        p3 = vector_matrix_multiplication(p3, zRotationMatrix)
+        p0 = p0.do_vector_matrix_multiplication(zRotationMatrix)
+        p1 = p1.do_vector_matrix_multiplication(zRotationMatrix)
+        p2 = p2.do_vector_matrix_multiplication(zRotationMatrix)
 
         # Applying X Rotation
-        p1 = vector_matrix_multiplication(p1, xRotationMatrix)
-        p2 = vector_matrix_multiplication(p2, xRotationMatrix)
-        p3 = vector_matrix_multiplication(p3, xRotationMatrix)
+        p0 = p0.do_vector_matrix_multiplication(xRotationMatrix)
+        p1 = p1.do_vector_matrix_multiplication(xRotationMatrix)
+        p2 = p2.do_vector_matrix_multiplication(xRotationMatrix)
         
         # Applying offset and projecting to screen
-        p1[0] += -cameraX
-        p2[0] += -cameraX
-        p3[0] += -cameraX
+        p0.x += -cameraX
+        p1.x += -cameraX
+        p2.x += -cameraX
 
-        p1[2] += offset - cameraZ
-        p2[2] += offset - cameraZ
-        p3[2] += offset - cameraZ
+        p0.z += offset - cameraZ
+        p1.z += offset - cameraZ
+        p2.z += offset - cameraZ
+
+        # Normal calculations
+        line1 = Vector3()
+        line1.x = p1.x - p0.x
+        line1.y = p1.y - p0.y
+        line1.z = p1.z - p0.z
+
+        line2 = Vector3()
+        line2.x = p2.x - p0.x
+        line2.y = p2.y - p0.y
+        line2.z = p2.z - p0.z
+
+        normal = line1.get_unit_normal_vector(line2)
+
         
-        projectedTriangle = [vector_matrix_multiplication(p1, projectionMatrix),
-                     vector_matrix_multiplication(p2, projectionMatrix),
-                     vector_matrix_multiplication(p3, projectionMatrix)]
+        if (normal.z < 0):
+            projectedTriangle = [p0.do_vector_matrix_multiplication(projectionMatrix),
+                        p1.do_vector_matrix_multiplication(projectionMatrix),
+                        p2.do_vector_matrix_multiplication(projectionMatrix)]
 
-        # Scaling all values to screen size
-        for p in projectedTriangle:
-            p[0] = int((p[0]+1)*0.5*WIDTH)
-            p[1] = int((1-(p[1]+1)*0.5)*HEIGHT)
+            # Scaling all values to screen size
+            for p in projectedTriangle:
+                p.x = int((p.x+1)*0.5*WIDTH)
+                p.y = int((1-(p.y+1)*0.5)*HEIGHT)
 
-        draw_triangle(projectedTriangle[0][0], projectedTriangle[0][1],
-              projectedTriangle[1][0], projectedTriangle[1][1],
-              projectedTriangle[2][0], projectedTriangle[2][1])
+            draw_triangle(projectedTriangle[0].x, projectedTriangle[0].y,
+                projectedTriangle[1].x, projectedTriangle[1].y,
+                projectedTriangle[2].x, projectedTriangle[2].y)
 
     # End of drawing stuff
 
