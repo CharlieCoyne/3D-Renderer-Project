@@ -20,7 +20,7 @@ cubeTriangles = [
 
     # East Triangles
     [Vector3(1,0,0), Vector3(1,1,0), Vector3(1,1,1)],
-    [Vector3(1,0,0), Vector3(1,1,1), Vector3(1,0,0)],
+    [Vector3(1,0,0), Vector3(1,1,1), Vector3(1,0,1)],
 
     # North Triangles
     [Vector3(1,0,1), Vector3(1,1,1), Vector3(0,1,1)],
@@ -55,12 +55,16 @@ projectionMatrix[3][2] = (-fFar * fNear) / (fFar - fNear)
 projectionMatrix[2][3] = 1 # used to get z back out during matrix multiplication
 
 
-def draw_triangle(x1,y1,x2,y2,x3,y3, colour = (255,255,255)):
-    pygame.draw.line(screen, colour, (x1,y1),(x2,y2))
-    pygame.draw.line(screen, colour, (x2,y2),(x3,y3))
-    pygame.draw.line(screen, colour, (x3,y3),(x1,y1))
+def distance_between(point1: Vector3, point2: Vector3) -> Vector3:
+    return Vector3(point1.x - point2.x, point1.y - point2.y, point1.z - point2.z)
 
-cameraX, cameraZ = 0, 0
+def draw_triangle(x1,y1,x2,y2,x3,y3, colour = (255,255,255)):
+    pygame.draw.line(screen, colour, (x1,y1),(x2,y2), 3)
+    pygame.draw.line(screen, colour, (x2,y2),(x3,y3), 3)
+    pygame.draw.line(screen, colour, (x3,y3),(x1,y1), 3)
+
+camera_location = Vector3(0,0,0)
+camera_direction = Vector3(0,0,0)
 speed = 0.01
 
 running = True
@@ -71,13 +75,13 @@ while running:
 
     keys = pygame.key.get_pressed()
     if keys[pygame.K_w]:
-        cameraZ += speed
+        camera_location.z += speed
     if keys[pygame.K_s]:
-        cameraZ -= speed
+        camera_location.z -= speed
     if keys[pygame.K_a]:
-        cameraX -= speed
+        camera_location.x -= speed
     if keys[pygame.K_d]:
-        cameraX += speed
+        camera_location.x += speed
 
     fElapsedTime = (pygame.time.get_ticks() - start_time) / 1000
     fTheta = fElapsedTime
@@ -110,9 +114,9 @@ while running:
     for triangle in cubeTriangles:
         offset = 3 #Temporary offset so that cube isn't rendered inside of the "camera"
 
-        p0 = triangle[0]
-        p1 = triangle[1]
-        p2 = triangle[2]
+        p0 = Vector3(triangle[0].x, triangle[0].y, triangle[0].z)
+        p1 = Vector3(triangle[1].x, triangle[1].y, triangle[1].z)
+        p2 = Vector3(triangle[2].x, triangle[2].y, triangle[2].z)
 
         # Applying Z Rotation
         p0 = p0.do_vector_matrix_multiplication(zRotationMatrix)
@@ -125,13 +129,13 @@ while running:
         p2 = p2.do_vector_matrix_multiplication(xRotationMatrix)
         
         # Applying offset and projecting to screen
-        p0.x += -cameraX
-        p1.x += -cameraX
-        p2.x += -cameraX
+        p0.x += -camera_location.x
+        p1.x += -camera_location.x
+        p2.x += -camera_location.x
 
-        p0.z += offset - cameraZ
-        p1.z += offset - cameraZ
-        p2.z += offset - cameraZ
+        p0.z += offset - camera_location.z
+        p1.z += offset - camera_location.z
+        p2.z += offset - camera_location.z
 
         # Normal calculations
         line1 = Vector3()
@@ -145,9 +149,15 @@ while running:
         line2.z = p2.z - p0.z
 
         normal = line1.get_unit_normal_vector(line2)
+        camera_to_triangle = distance_between(p0, camera_location)
+        dot_product_result =camera_to_triangle.do_dot_product(normal)
 
-        
-        if (normal.z < 0):
+        if (dot_product_result < 0):
+            light_direction = Vector3(0,0,-1)
+            unit_light_direction = light_direction.get_unit_vector()
+
+            light_dot_product = normal.do_dot_product(light_direction)
+
             projectedTriangle = [p0.do_vector_matrix_multiplication(projectionMatrix),
                         p1.do_vector_matrix_multiplication(projectionMatrix),
                         p2.do_vector_matrix_multiplication(projectionMatrix)]

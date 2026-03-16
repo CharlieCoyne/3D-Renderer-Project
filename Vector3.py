@@ -18,6 +18,13 @@ class Vector3:
             self.z / length
         )
 
+    def do_dot_product(self, vector2: "Vector3") -> float:
+        return (
+            self.x * vector2.x +
+            self.y * vector2.y +
+            self.z * vector2.z
+        )
+
     def do_unit_dot_product(self, vector2: "Vector3") -> float:
         vector1_unit = self.get_unit_vector()
         vector2_unit = vector2.get_unit_vector()
