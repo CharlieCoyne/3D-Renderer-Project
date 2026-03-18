@@ -57,11 +57,14 @@ projectionMatrix[2][2] = fFar / (fFar - fNear)
 projectionMatrix[3][2] = (-fFar * fNear) / (fFar - fNear)
 projectionMatrix[2][3] = 1 # used to get z back out during matrix multiplication
 
+identityMatrix = [[0,0,0,0] for _ in range(4)]
+identityMatrix[0][0] = 1
+identityMatrix[1][1] = 1
+identityMatrix[2][2] = 1
+identityMatrix[3][3] = 1
+
 shapes = []
-shapes.append(Shape(Vector3(0,-2,3),cubeTriangles))
-shapes.append(Shape(Vector3(0,-2,4),cubeTriangles))
-shapes.append(Shape(Vector3(1,-2,4),cubeTriangles))
-shapes.append(Shape(Vector3(-1,-2,4),cubeTriangles))
+shapes.append(Shape(Vector3(0,0,10), 'teapot.obj'))
 
 
 def distance_between(point1: Vector3, point2: Vector3) -> Vector3:
@@ -87,6 +90,7 @@ def draw_triangle(x1,y1,x2,y2,x3,y3, colour = (255,255,255)):
 camera_location = Vector3(0,0,0)
 camera_direction = Vector3(0,0,0)
 light_direction = Vector3(0,0,-1)
+unit_light_direction = light_direction.get_unit_vector()
 speed = 5
 
 running = True
@@ -166,40 +170,36 @@ while running:
             p2.x += shape.position.x
             p2.y += shape.position.y
             p2.z += shape.position.z
-
-            avg_z = (p0.z + p1.z + p2.z) / 3
             
             # Applying object camera position
             p0.x += -camera_location.x
             p1.x += -camera_location.x
             p2.x += -camera_location.x
 
+            p0.y += -camera_location.y
+            p1.y += -camera_location.y
+            p2.y += -camera_location.y
+
             p0.z += -camera_location.z
             p1.z += -camera_location.z
             p2.z += -camera_location.z
+
+            avg_z = (p0.z + p1.z + p2.z) / 3
 
             # Culls triangles that are too close to avoid divide by zero errors
             if p0.z <= fNear or p1.z <= fNear or p2.z <= fNear:
                 continue
 
             # Normal calculations
-            line1 = Vector3()
-            line1.x = p1.x - p0.x
-            line1.y = p1.y - p0.y
-            line1.z = p1.z - p0.z
-
-            line2 = Vector3()
-            line2.x = p2.x - p0.x
-            line2.y = p2.y - p0.y
-            line2.z = p2.z - p0.z
+            line1 = p1.subtract(p0)
+            line2 = p2.subtract(p0)
 
             normal = line1.get_unit_normal_vector(line2)
+            camera_ray = p0.subtract(camera_location)
             dot_product_result = normal.do_dot_product(p0)
 
             if (dot_product_result < 0):
-                unit_light_direction = light_direction.get_unit_vector()
-
-                light_dot_product = normal.do_dot_product(light_direction)
+                light_dot_product = normal.do_dot_product(unit_light_direction)
                 brightness = (light_dot_product + 1) / 2 # Value 0-1
                 colour = brightness_to_grayscale(brightness)
 
@@ -219,15 +219,15 @@ while running:
                 })
 
         # Painter's Algorithm i.e draw closest things last
-        triangles_to_draw.sort(key=lambda tri: tri["depth"], reverse=True)
-        for triangle in triangles_to_draw:
-            p = triangle["points"]
-            draw_triangle(
-                p[0].x, p[0].y,
-                p[1].x, p[1].y,
-                p[2].x, p[2].y,
-                triangle["colour"]
-            )
+    triangles_to_draw.sort(key=lambda tri: tri["depth"], reverse=True)
+    for triangle in triangles_to_draw:
+        p = triangle["points"]
+        draw_triangle(
+            p[0].x, p[0].y,
+            p[1].x, p[1].y,
+            p[2].x, p[2].y,
+            triangle["colour"]
+        )
     # End of drawing stuff
 
     # Update display

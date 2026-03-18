@@ -1,13 +1,20 @@
 import math
 
 class Vector3:
-    def __init__(self, x=0, y=0, z=0):
+    def __init__(self, x=0, y=0, z=0, w=1):
         self.x = x
         self.y = y
         self.z = z
+        self.w = w
+    
+    def add(self, vector2):
+        return Vector3(self.x + vector2.x, self.y + vector2.y, self.z + vector2.z)
+
+    def subtract(self, vector2):
+        return Vector3(self.x - vector2.x, self.y - vector2.y, self.z - vector2.z)
     
     def get_unit_vector(self) -> "Vector3":
-        length = math.sqrt(self.x**2 + self.y**2 + self.z**2)
+        length = self.get_length()
 
         if length == 0:
             return Vector3(0, 0, 0)
@@ -34,13 +41,16 @@ class Vector3:
             vector1_unit.y * vector2_unit.y +
             vector1_unit.z * vector2_unit.z
         )
+    
+    def do_vector_cross_product(self , vector2):
+        new_vector = Vector3()
+        new_vector.x = self.y * vector2.z - self.z * vector2.y
+        new_vector.y = self.z * vector2.x - self.x * vector2.z
+        new_vector.z = self.x * vector2.y - self.y * vector2.x
+        return new_vector
 
     def get_unit_normal_vector(self, vector2: "Vector3") -> "Vector3":
-        normal = Vector3()
-        normal.x = self.y * vector2.z - self.z * vector2.y
-        normal.y = self.z * vector2.x - self.x * vector2.z
-        normal.z = self.x * vector2.y - self.y * vector2.x
-
+        normal = self.do_vector_cross_product(vector2)
         unit_normal = normal.get_unit_vector()
         
         return unit_normal
@@ -59,6 +69,9 @@ class Vector3:
             output_vector.z /= w 
 
         return output_vector
+
+    def get_length(self):
+        return math.sqrt(self.x**2 + self.y**2 + self.z**2)
 
     def __repr__(self):
         return f"Vector3({self.x}, {self.y}, {self.z})"
