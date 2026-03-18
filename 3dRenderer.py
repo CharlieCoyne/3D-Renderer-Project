@@ -10,7 +10,7 @@ pygame.init()
 # Pygame Settings
 WIDTH, HEIGHT = 1920, 1080
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("3d Renderer")
+pygame.display.set_caption("3d Renderer FPS : ?")
 start_time = pygame.time.get_ticks()
 
 clock = pygame.time.Clock()
@@ -63,8 +63,11 @@ identityMatrix[1][1] = 1
 identityMatrix[2][2] = 1
 identityMatrix[3][3] = 1
 
+zRotationMatrix = [[0,0,0,0] for _ in range(4)]
+xRotationMatrix = [[0,0,0,0] for _ in range(4)]
+
 shapes = []
-shapes.append(Shape(Vector3(0,0,10), 'teapot.obj'))
+shapes.append(Shape(Vector3(0,-2,10), 'teapot.obj'))
 
 
 def distance_between(point1: Vector3, point2: Vector3) -> Vector3:
@@ -96,6 +99,7 @@ speed = 5
 running = True
 while running:
     delta_time = clock.tick() / 1000
+    pygame.display.set_caption(f"3d Renderer FPS : {1/delta_time:.2f}")
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -115,8 +119,6 @@ while running:
     fTheta = fElapsedTime
 
     # Rotation of cube
-    zRotationMatrix = [[0,0,0,0] for _ in range(4)]
-    xRotationMatrix = [[0,0,0,0] for _ in range(4)]
 
     # Z rotation
     zRotationMatrix[0][0] = math.cos(fTheta)
